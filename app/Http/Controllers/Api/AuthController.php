@@ -13,15 +13,15 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
+            'admin_email' => ['required', 'email'],
+            'admin_password' => ['required', 'string'],
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $request->admin_email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($request->admin_password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['البيانات المدخلة غير صحيحة.'],
+                'admin_email' => ['البيانات المدخلة غير صحيحة.'],
             ]);
         }
 
@@ -55,7 +55,7 @@ class AuthController extends Controller
         }
 
         // حذف التوكنات القديمة (اختياري - يعني تسجيل دخول واحد بنفس الوقت فقط)
-        // $user->tokens()->delete();
+        $user->tokens()->delete();
 
         $token = $user->createToken('auth_token')->plainTextToken;
 

@@ -14,7 +14,7 @@ class EmployeeAccountCreated extends Notification implements ShouldQueue
     /**
      * Create a new notification instance.
      */
-    public function __construct(public string $temporaryPassword)
+    public function __construct(public string $token)
     {
         //
     }
@@ -34,13 +34,14 @@ class EmployeeAccountCreated extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $url = config('app.frontend_url') . '/activate-employee-account?token=' . $this->token . '&email=' . urlencode($notifiable->email);
+
         return (new MailMessage)
             ->subject('تم إنشاء حسابك على المنصة')
             ->line('تم إنشاء حساب لك من قبل إدارة مؤسستك.')
-            ->line('بريدك الإلكتروني: ' . $notifiable->email)
-            ->line('كلمة السر المؤقتة: ' . $this->temporaryPassword)
-            ->line('يرجى تسجيل الدخول وتغيير كلمة السر فورًا.')
-            ->action('تسجيل الدخول', url('/login'));
+            ->line('يرجى الضغط على الرابط أدناه لتحديد كلمة السر الخاصة بك.')
+            ->action('تفعيل الحساب', $url)
+            ->line('هذا الرابط صالح لمدة 24 ساعة.');
     }
 
     /**
