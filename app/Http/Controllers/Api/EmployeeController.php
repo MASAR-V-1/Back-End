@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateEmployeeRequest;
+use App\Http\Resources\EmployeeResource;
 use App\Models\User;
 use App\Notifications\EmployeeAccountCreated;
 use Illuminate\Http\Request;
@@ -15,27 +16,26 @@ class EmployeeController extends Controller
     public function store(CreateEmployeeRequest $request)
     {
         $orgAdmin = $request->user();
-
-        // توليد باسورد عشوائي مؤقت (8 خانات)
-        $temporaryPassword = Str::random(8);
-
+        $token = Str::random(60);
         $employee = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($temporaryPassword),
+            'password' => Hash::make(Str::random(32)), // باسورد عشوائي مؤقت، ما رح يستخدمه أصلًا
             'organization_id' => $orgAdmin->organization_id,
             'is_active' => true,
             'must_change_password' => true,
-            'email_verified_at' => now(), // الموظف ما يحتاج verification، org_admin أكد هويته
+            'email_verified_at' => null, // غير مفعّل لحد ما يفعّل حسابه
+            'activation_token' => Hash::make($token), // نخزنه مشفر، أمان أكتر
+            'activation_token_expires_at' => now()->addHours(24),
         ]);
 
         $employee->assignRole('employee');
 
-        $employee->notify(new EmployeeAccountCreated($temporaryPassword));
+        $employee->notify(new EmployeeAccountCreated($token)); // التوكن الخام (plain) بيروح بالإيميل بس
 
         return response()->json([
-            'message' => 'تم إنشاء حساب الموظف بنجاح وتم إرسال بيانات الدخول له عبر الإيميل.',
-            'employee' => $employee,
+            'message' => 'تم إنشاء حساب الموظف بنجاح وتم إرسال رابط تفعيل الحساب له عبر الإيميل.',
+            'employee' => new EmployeeResource($employee),
         ], 201);
     }
 
@@ -49,6 +49,6 @@ class EmployeeController extends Controller
             ->latest()
             ->paginate(15);
 
-        return response()->json($employees);
+        return EmployeeResource::collection($employees);
     }
 }
