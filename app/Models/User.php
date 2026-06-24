@@ -33,6 +33,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'is_active' => 'boolean',
             'must_change_password' => 'boolean',
+            'activation_token' => 'hashed',
+            'activation_token_expires_at' => 'datetime',
         ];
     }
     protected $fillable = [
@@ -43,6 +45,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_active',
         'must_change_password',
         'email_verified_at',
+        'activation_token',
+        'activation_token_expires_at',
     ];
 
     protected $hidden = [

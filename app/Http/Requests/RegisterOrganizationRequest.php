@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Organization;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -33,7 +34,9 @@ class RegisterOrganizationRequest extends FormRequest
             ],
             'organization_phone' => ['nullable', 'string', 'max:20'],
             'organization_description' => ['nullable', 'string'],
-
+            'organization_region' => ['required', Rule::in(Organization::REGIONS)],
+            'organization_type' => ['required', Rule::in(Organization::TYPES)],
+            'agreed_to_terms' => ['required', 'boolean', 'accepted'],
             // بيانات الـ admin الشخصية
             'admin_name' => ['required', 'string', 'max:255'],
             'admin_email' => [
@@ -49,6 +52,11 @@ class RegisterOrganizationRequest extends FormRequest
         return [
             'organization_email.unique' => 'هاد الإيميل مسجل مسبقًا لمؤسسة أخرى.',
             'admin_email.unique' => 'هاد الإيميل مستخدم مسبقًا.',
+            'organization_region.required' => 'يرجى تحديد المنطقة.',
+            'organization_region.in' => 'المنطقة المحددة غير صحيحة.',
+            'organization_type.required' => 'يرجى تحديد نوع المؤسسة.',
+            'organization_type.in' => 'نوع المؤسسة المحدد غير صحيح.',
+            'agreed_to_terms.accepted' => 'يجب الموافقة على الشروط والأحكام للتسجيل.',
         ];
     }
 }

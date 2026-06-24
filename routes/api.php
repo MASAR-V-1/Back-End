@@ -17,7 +17,9 @@ Route::get('/user', function (Request $request) {
 Route::post('/register-organization', [OrganizationRegistrationController::class, 'store']);
 Route::post('/email/resend-verification', [EmailVerificationController::class, 'resend'])
     ->middleware('throttle:3,1');
-
+Route::get('/verify-email/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware('signed')
+    ->name('api.verification.verify');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink']);
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
@@ -32,6 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:org_admin')->group(function () {
         Route::post('/employees', [EmployeeController::class, 'store']);
         Route::get('/employees', [EmployeeController::class, 'index']);
+        Route::post('/employees/{employee}/resend-activation', [EmployeeActivationController::class, 'resend']);
+
     });
 });
 

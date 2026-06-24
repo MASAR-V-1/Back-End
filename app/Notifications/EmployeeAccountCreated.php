@@ -34,7 +34,7 @@ class EmployeeAccountCreated extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $url = config('app.frontend_url') . '/activate-employee-account?token=' . $this->token . '&email=' . urlencode($notifiable->email);
+        $url = rtrim(config('app.frontend_url'), '/') . '/activate-employee-account?token=' . $this->token . '&email=' . urlencode($notifiable->email);
 
         return (new MailMessage)
             ->subject('تم إنشاء حسابك على المنصة')

@@ -40,7 +40,7 @@ class NewOrganizationRegistered extends Notification implements ShouldQueue
             ->line('قامت مؤسسة جديدة بالتسجيل وتحتاج لمراجعتك.')
             ->line('اسم المؤسسة: ' . $this->organization->name)
             ->line('الإيميل: ' . $this->organization->email)
-            ->action('مراجعة الطلب', url('/dashboard/super-admin/organizations'))
+            ->action('مراجعة الطلب', route('super-admin.organizations.index'))
             ->line('شكرًا لاستخدامك المنصة.');
     }
 

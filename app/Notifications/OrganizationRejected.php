@@ -35,12 +35,13 @@ class OrganizationRejected extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $url = rtrim(config('app.frontend_url'), '/') . '/register';
         return (new MailMessage)
             ->subject('بخصوص طلب تسجيل مؤسستكم')
             ->line('نأسف لإعلامكم بأنه تم رفض طلب تسجيل مؤسسة "' . $this->organization->name . '".')
             ->line('سبب الرفض: ' . $this->reason)
             ->line('يمكنكم التسجيل من جديد بعد تعديل البيانات المطلوبة.')
-            ->action('تسجيل من جديد', url('/register'))
+            ->action('تسجيل من جديد', $url)
             ->line('شكرًا لتفهمكم.');
     }
 

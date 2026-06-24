@@ -26,6 +26,9 @@ class OrganizationRegistrationController extends Controller
                 'email' => $validated['organization_email'],
                 'phone' => $validated['organization_phone'] ?? null,
                 'description' => $validated['organization_description'] ?? null,
+                'region' => $validated['organization_region'],
+                'organization_type' => $validated['organization_type'],
+                'agreed_to_terms' => $validated['agreed_to_terms'],
                 'status' => 'pending',
             ]);
 
