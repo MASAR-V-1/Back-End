@@ -33,10 +33,9 @@ class EmployeeController extends Controller
 
         $employee->notify(new EmployeeAccountCreated($token)); // التوكن الخام (plain) بيروح بالإيميل بس
 
-        return response()->json([
-            'message' => 'تم إنشاء حساب الموظف بنجاح وتم إرسال رابط تفعيل الحساب له عبر الإيميل.',
+        return BaseController::sendResponse([
             'employee' => new EmployeeResource($employee),
-        ], 201);
+        ], 'تم إنشاء حساب الموظف بنجاح وتم إرسال رابط تفعيل الحساب له عبر الإيميل.', 201);
     }
 
     // عرض كل موظفي المؤسسة (لاحقًا، بس نضيفها هلأ كبونص بسيط)
@@ -49,6 +48,8 @@ class EmployeeController extends Controller
             ->latest()
             ->paginate(15);
 
-        return EmployeeResource::collection($employees);
+        return BaseController::sendResponse([
+            'employees' => EmployeeResource::collection($employees),
+        ], 'تم جلب قائمة الموظفين بنجاح.');
     }
 }
