@@ -35,11 +35,12 @@ class OrganizationApproved extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $url = rtrim(config('app.frontend_url'), '/') . '/login';
         return (new MailMessage)
             ->subject('تمت الموافقة على تسجيل مؤسستكم 🎉')
             ->line('تهانينا! تمت الموافقة على طلب تسجيل مؤسسة "' . $this->organization->name . '".')
             ->line('يمكنكم الآن تسجيل الدخول والبدء باستخدام المنصة.')
-            ->action('تسجيل الدخول', url('/login'))
+            ->action('تسجيل الدخول', $url)
             ->line('شكرًا لانضمامكم إلينا.');
     }
 

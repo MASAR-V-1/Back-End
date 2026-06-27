@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\EmployeeAccountCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Str;
 class EmployeeActivationController extends Controller
 {
     public function activate(Request $request)
@@ -42,5 +43,60 @@ class EmployeeActivationController extends Controller
         return response()->json([
             'message' => 'تم تفعيل الحساب بنجاح، يمكنك تسجيل الدخول الآن.',
         ]);
+    }
+
+    public function resend(Request $request, User $employee)
+    {
+        $orgAdmin = $request->user();
+        // تأكد إنه الموظف تابع لنفس مؤسسة الـ org_admin
+        if ($employee->organization_id !== $orgAdmin->organization_id) {
+            return BaseController::sendError('غير مصرح لك بهذا الإجراء.', [], 403);
+        }
+
+        if (!$employee->isEmployee()) {
+            return BaseController::sendError('هذا المستخدم ليس موظفًا.', [], 400);
+        }
+
+        if ($employee->hasVerifiedEmail()) {
+            return BaseController::sendError('تم تفعيل حساب هذا الموظف مسبقًا.', [], 400);
+        }
+
+        $token = Str::random(60);
+
+        $employee->forceFill([
+            'activation_token' => Hash::make($token),
+            'activation_token_expires_at' => now()->addHours(24),
+        ])->save();
+
+        $employee->notify(new EmployeeAccountCreated($token));
+
+        return BaseController::sendResponse([], 'تم إرسال رابط التفعيل من جديد.');
+    }
+
+    public function toggleActive(Request $request, User $employee)
+    {
+        $orgAdmin = $request->user();
+
+        // تأكد إنه الموظف تابع لنفس مؤسسة org_admin
+        if ($employee->organization_id !== $orgAdmin->organization_id) {
+            return BaseController::sendError('غير مصرح لك بهذا الإجراء.', [], 403);
+        }
+
+        if (!$employee->isEmployee()) {
+            return BaseController::sendError('هذا المستخدم ليس موظفًا.', [], 400);
+        }
+
+        $newStatus = !$employee->is_active;
+
+        $employee->update(['is_active' => $newStatus]);
+
+        // لو عم نجمّد، نحذف توكناته فورًا
+        if (!$newStatus) {
+            $employee->tokens()->delete();
+        }
+
+        return BaseController::sendResponse([
+            'employee' => $employee,
+        ], $newStatus ? 'تم تفعيل حساب الموظف بنجاح.' : 'تم تجميد حساب الموظف بنجاح.');
     }
 }

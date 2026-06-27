@@ -2,19 +2,20 @@
 
 namespace App\Notifications;
 
+use App\Models\Organization;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class EmployeeAccountCreated extends Notification implements ShouldQueue
+class OrganizationNeedsChanges extends Notification implements ShouldQueue
 {
     use Queueable;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(public string $token)
+    public function __construct(public Organization $organization)
     {
         //
     }
@@ -34,14 +35,17 @@ class EmployeeAccountCreated extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $url = rtrim(config('app.frontend_url'), '/') . '/activate-employee-account?token=' . $this->token . '&email=' . urlencode($notifiable->email);
+        $mail = (new MailMessage)
+            ->subject('مطلوب تعديل بيانات مؤسستكم')
+            ->line('يرجى تعديل البيانات التالية بحساب مؤسستكم:');
 
-        return (new MailMessage)
-            ->subject('تم إنشاء حسابك على المنصة')
-            ->line('تم إنشاء حساب لك من قبل إدارة مؤسستك.')
-            ->line('يرجى الضغط على الرابط أدناه لتحديد كلمة السر الخاصة بك.')
-            ->action('تفعيل الحساب', $url)
-            ->line('هذا الرابط صالح لمدة 24 ساعة.');
+        foreach ($this->organization->review_notes ?? [] as $field => $note) {
+            $mail->line("• {$field}: {$note}");
+        }
+
+        $mail->action('تعديل البيانات', config('app.frontend_url') . 'organization-profile');
+
+        return $mail;
     }
 
     /**
