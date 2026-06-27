@@ -50,15 +50,15 @@ class EmployeeActivationController extends Controller
         $orgAdmin = $request->user();
         // تأكد إنه الموظف تابع لنفس مؤسسة الـ org_admin
         if ($employee->organization_id !== $orgAdmin->organization_id) {
-            return response()->json(['message' => 'غير مصرح لك بهذا الإجراء.'], 403);
+            return BaseController::sendError('غير مصرح لك بهذا الإجراء.', [], 403);
         }
 
         if (!$employee->isEmployee()) {
-            return response()->json(['message' => 'هذا المستخدم ليس موظفًا.'], 400);
+            return BaseController::sendError('هذا المستخدم ليس موظفًا.', [], 400);
         }
 
         if ($employee->hasVerifiedEmail()) {
-            return response()->json(['message' => 'تم تفعيل حساب هذا الموظف مسبقًا.'], 400);
+            return BaseController::sendError('تم تفعيل حساب هذا الموظف مسبقًا.', [], 400);
         }
 
         $token = Str::random(60);
@@ -70,8 +70,33 @@ class EmployeeActivationController extends Controller
 
         $employee->notify(new EmployeeAccountCreated($token));
 
-        return response()->json([
-            'message' => 'تم إرسال رابط التفعيل من جديد.',
-        ]);
+        return BaseController::sendResponse([], 'تم إرسال رابط التفعيل من جديد.');
+    }
+
+    public function toggleActive(Request $request, User $employee)
+    {
+        $orgAdmin = $request->user();
+
+        // تأكد إنه الموظف تابع لنفس مؤسسة org_admin
+        if ($employee->organization_id !== $orgAdmin->organization_id) {
+            return BaseController::sendError('غير مصرح لك بهذا الإجراء.', [], 403);
+        }
+
+        if (!$employee->isEmployee()) {
+            return BaseController::sendError('هذا المستخدم ليس موظفًا.', [], 400);
+        }
+
+        $newStatus = !$employee->is_active;
+
+        $employee->update(['is_active' => $newStatus]);
+
+        // لو عم نجمّد، نحذف توكناته فورًا
+        if (!$newStatus) {
+            $employee->tokens()->delete();
+        }
+
+        return BaseController::sendResponse([
+            'employee' => $employee,
+        ], $newStatus ? 'تم تفعيل حساب الموظف بنجاح.' : 'تم تجميد حساب الموظف بنجاح.');
     }
 }

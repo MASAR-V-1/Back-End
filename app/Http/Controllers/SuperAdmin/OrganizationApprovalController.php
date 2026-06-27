@@ -5,32 +5,29 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Notifications\OrganizationApproved;
+use App\Notifications\OrganizationNeedsChanges;
 use App\Notifications\OrganizationRejected;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class OrganizationApprovalController extends Controller
 {
-    // عرض كل المؤسسات المعلقة
     public function index(Request $request)
     {
-
-        $status = $request->query('status', 'pending'); // افتراضي: pending
+        $status = $request->query('status', 'pending_review');
 
         $query = Organization::query()->with('users');
 
         if ($status === 'rejected') {
-            $query->onlyTrashed()->where('status', 'rejected');
+            $query->onlyTrashed()->where('status', Organization::STATUS_REJECTED);
         } elseif ($status === 'approved') {
-            $query->where('status', 'approved')->with('approver');
+            $query->where('status', Organization::STATUS_APPROVED);
+        } elseif ($status === 'needs_changes') {
+            $query->where('status', Organization::STATUS_NEEDS_CHANGES);
         } elseif ($status === 'all') {
-            $query->with('approver')->withTrashed();
+            $query->withTrashed();
         } else {
-            // pending (افتراضي) - بس الي تحقق إيميلهم
-            $query->where('status', 'pending')
-                ->whereHas('users', function ($q) {
-                    $q->whereNotNull('email_verified_at');
-                });
+            $query->where('status', Organization::STATUS_PENDING_REVIEW);
         }
 
         $organizations = $query->latest()->paginate(10)->withQueryString();
@@ -38,26 +35,76 @@ class OrganizationApprovalController extends Controller
         return view('super_admin.organizations.index', compact('organizations', 'status'));
     }
 
-    // الموافقة على مؤسسة
+    public function show(Organization $organization)
+    {
+        // تحميل الموظفين والمستخدمين المرتبطين بالمؤسسة لضمان جلب صلاحية الأدمن بسلاسة في الـ blade
+        $organization->load('users');
+
+        return view('super_admin.organizations.show', compact('organization'));
+    }
+    public function toggleActive(Organization $organization)
+    {
+        $owner = $organization->users?->first(fn($user) => $user->isOrgAdmin());
+
+        if (!$owner) {
+            flash()->error('تعذر العثور على مدير للمؤسسة لتعديل حالته.');
+            return redirect()->back();
+        }
+
+        if ($organization->isSuspended()) {
+            // إعادة تفعيل المؤسسة - ما بنلمس is_active تبع أي مستخدم فردي
+            $organization->update(['suspended_at' => null]);
+            $message = 'تم إلغاء تجميد المؤسسة. ملاحظة: الحسابات التي كانت معطّلة بشكل فردي من قبل المدير تبقى معطّلة.';
+        } else {
+            // تجميد المؤسسة - نحذف توكنات الكل فورًا (بغض النظر عن is_active الفردي)
+            $organization->update(['suspended_at' => now()]);
+
+            $tokenableIds = $organization->users()->pluck('id');
+            \Laravel\Sanctum\PersonalAccessToken::where('tokenable_type', \App\Models\User::class)
+                ->whereIn('tokenable_id', $tokenableIds)
+                ->delete();
+
+            $message = 'تم تجميد المؤسسة وجميع حساباتها مؤقتاً.';
+        }
+
+        flash()->success($message);
+
+        return redirect()->back();
+    }
     public function approve(Organization $organization)
     {
         $organization->update([
-            'status' => 'approved',
+            'status' => Organization::STATUS_APPROVED,
             'approved_at' => now(),
-            'approved_by' => Auth::user()->id,
+            'approved_by' => Auth::id(),
+            'review_notes' => null,
         ]);
 
-        //  ممكن نرسل إشعار للـ org_admin إنه تمت الموافقة
         $orgAdmin = $organization->users()->first();
-        if ($orgAdmin) {
-            $orgAdmin->notify(new OrganizationApproved($organization));
-        }
-
-        flash()->success('تمت الموافقة على المؤسسة بنجاح.');
+        $orgAdmin?->notify(new OrganizationApproved($organization));
+        flash()->success('تم اعتماد المؤسسة بنجاح.');
         return redirect()->back();
     }
 
-    // رفض مؤسسة
+    // طلب تعديل - حقول محددة مع ملاحظات
+    public function requestChanges(Request $request, Organization $organization)
+    {
+        $request->validate([
+            'review_notes' => ['required', 'array', 'min:1'],
+            'review_notes.*' => ['required', 'string', 'max:500'],
+        ]);
+
+        $organization->update([
+            'status' => Organization::STATUS_NEEDS_CHANGES,
+            'review_notes' => $request->review_notes, // array: ['region' => '...', 'organization_type' => '...']
+        ]);
+
+        $orgAdmin = $organization->users()->first();
+        $orgAdmin?->notify(new OrganizationNeedsChanges($organization));
+        flash()->success('تم إرسال طلب التعديل للمؤسسة بنجاح.');
+        return redirect()->back();
+    }
+
     public function reject(Request $request, Organization $organization)
     {
         $request->validate([
@@ -65,22 +112,19 @@ class OrganizationApprovalController extends Controller
         ]);
 
         $orgAdmin = $organization->users()->first();
-        
+
         $organization->update([
-            'status' => 'rejected',
+            'status' => Organization::STATUS_REJECTED,
             'rejection_reason' => $request->rejection_reason,
         ]);
-          //  إرسال إشعار/إيميل للمتقدم بسبب الرفض
-        // نرسل الإشعار قبل الحذف (soft delete)، لأنه بعد الحذف بصير notifiable محذوف منطقيًا
+
         if ($orgAdmin) {
             $orgAdmin->notify(new OrganizationRejected($organization, $request->rejection_reason));
         }
-        // حذف المستخدم org_admin المرتبط (عشان يقدر يسجل من جديد بنفس الإيميل)
-        // Soft delete للـ user والـ organization (بضلوا بالسجل التاريخي)
+
         $organization->users()->delete();
         $organization->delete();
-
-        flash()->success('تم رفض الطلب.');
+        flash()->success('تم رفض المؤسسة وحذف حساباتها بنجاح.');
         return redirect()->back();
     }
 }

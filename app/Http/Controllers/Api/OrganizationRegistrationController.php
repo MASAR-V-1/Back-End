@@ -26,14 +26,14 @@ class OrganizationRegistrationController extends Controller
                 'email' => $validated['organization_email'],
                 'phone' => $validated['organization_phone'] ?? null,
                 'description' => $validated['organization_description'] ?? null,
-                'region' => $validated['organization_region'],
-                'organization_type' => $validated['organization_type'],
+                'region' => $validated['organization_region'] ?? null,
+                'organization_type' => $validated['organization_type'] ?? null,
                 'agreed_to_terms' => $validated['agreed_to_terms'],
-                'status' => 'pending',
+                'status' => Organization::STATUS_INCOMPLETE,
             ]);
 
             $user = User::create([
-                'name' => $validated['admin_name'],
+                'name' => $validated['admin_name'] ?? null,
                 'email' => $validated['admin_email'],
                 'password' => Hash::make($validated['admin_password']),
                 'organization_id' => $organization->id,
@@ -59,9 +59,6 @@ class OrganizationRegistrationController extends Controller
         // $superAdmins = User::role('super_admin')->get();
         // Notification::send($superAdmins, new NewOrganizationRegistered($organization));
 
-        return response()->json([
-            'message' => 'تم تسجيل طلبك بنجاح. تحقق من إيميلك لتأكيد الحساب، وسيتم مراجعة طلبك من قبل الإدارة.',
-            'organization' => $organization,
-        ], 201);
+        return BaseController::sendResponse(['organization' => $organization], 'تم تسجيل حسابك بنجاح. تحقق من إيميلك لتأكيد الحساب، ثم أكمل بيانات مؤسستك.', 201);
     }
 }

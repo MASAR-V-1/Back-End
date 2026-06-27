@@ -17,7 +17,10 @@ Route::middleware(['auth', 'verified', 'role:super_admin'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::prefix('dashboard/super-admin')->name('super-admin.')->group(function () {
         Route::get('/organizations', [OrganizationApprovalController::class, 'index'])->name('organizations.index');
+        Route::get('organizations/{organization}', [OrganizationApprovalController::class, 'show'])->withTrashed()->name('organizations.show');
+        Route::patch('organizations/{organization}/toggle-active', [OrganizationApprovalController::class, 'toggleActive'])->name('organizations.toggleActive');
         Route::post('/organizations/{organization}/approve', [OrganizationApprovalController::class, 'approve'])->name('organizations.approve');
+        Route::post('/organizations/{organization}/request-changes', [OrganizationApprovalController::class, 'requestChanges'])->name('organizations.requestChanges');
         Route::post('/organizations/{organization}/reject', [OrganizationApprovalController::class, 'reject'])->name('organizations.reject');
     });
 });

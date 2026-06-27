@@ -20,22 +20,16 @@ class EmailVerificationController extends Controller
 
         // الموظفين عندهم نظام تفعيل مختلف، ما يستخدموا هذا الـ endpoint
         if ($user->isEmployee()) {
-            return response()->json([
-                'message' => 'يرجى التواصل مع إدارة مؤسستك لإعادة إرسال رابط التفعيل.',
-            ], 400);
+            return BaseController::sendError('هذا الحساب تابع لموظف، يرجى التواصل مع إدارة مؤسستك لإعادة إرسال رابط التفعيل.', [], 400);
         }
 
         if ($user->hasVerifiedEmail()) {
-            return response()->json([
-                'message' => 'هاد الحساب متحقق منه مسبقًا.',
-            ], 400);
+            return BaseController::sendError('تم تأكيد الإيميل مسبقًا.', [], 400);
         }
 
         $user->sendEmailVerificationNotification();
 
-        return response()->json([
-            'message' => 'تم إرسال إيميل التحقق من جديد، تحقق من بريدك.',
-        ]);
+        return BaseController::sendResponse([], 'تم إرسال إيميل التحقق من جديد، تحقق من بريدك.');
     }
 
 
@@ -45,17 +39,15 @@ class EmailVerificationController extends Controller
 
         // تأكد إنه الهاش مطابق لإيميل المستخدم (نفس منطق Laravel الافتراضي)
         if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-            return response()->json(['message' => 'رابط التحقق غير صالح.'], 400);
+            return BaseController::sendError('رابط التحقق غير صالح.', [], 400);
         }
 
         if ($user->hasVerifiedEmail()) {
-            return response()->json(['message' => 'تم تأكيد الإيميل مسبقًا.']);
+            return BaseController::sendError('تم تأكيد الإيميل مسبقًا.', [], 400);
         }
 
-        if ($user->markEmailAsVerified()) {
-            event(new Verified($user));
-        }
+        $user->markEmailAsVerified();
 
-        return response()->json(['message' => 'تم تأكيد الإيميل بنجاح.']);
+        return BaseController::sendResponse([], 'تم تأكيد الإيميل بنجاح.');
     }
 }

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\EmployeeActivationController;
 use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\OrganizationProfileController;
 use App\Http\Controllers\Api\OrganizationRegistrationController;
 use App\Http\Controllers\Api\PasswordResetController;
 use Illuminate\Http\Request;
@@ -25,17 +26,30 @@ Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'
 Route::post('/reset-password', [PasswordResetController::class, 'reset']);
 
 // Protected routes (لازم Sanctum token)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum', 'account.active')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/refresh-token', [AuthController::class, 'refresh']);
     Route::get('/me', [AuthController::class, 'me']);
 
-    // employees بس org_admin
+    // البروفايل - مسموح بأي حالة إلا rejected (org_admin محتاجه يكمل بياناته)
     Route::middleware('role:org_admin')->group(function () {
-        Route::post('/employees', [EmployeeController::class, 'store']);
-        Route::get('/employees', [EmployeeController::class, 'index']);
-        Route::post('/employees/{employee}/resend-activation', [EmployeeActivationController::class, 'resend']);
+        Route::get('/organization/profile', [OrganizationProfileController::class, 'show']);
+        Route::put('/organization/profile', [OrganizationProfileController::class, 'update']);
+        Route::post('/organization/submit-for-review', [OrganizationProfileController::class, 'submitForReview']);
+    });
 
+    // أي اشي تاني (موظفين، مشاريع، إلخ) - لازم تكون المؤسسة approved
+    Route::middleware('organization.approved')->group(function () {
+
+        Route::middleware('role:org_admin')->group(function () {
+            Route::post('/employees', [EmployeeController::class, 'store']);
+            Route::get('/employees', [EmployeeController::class, 'index']);
+            Route::post('/employees/{employee}/resend-activation', [EmployeeActivationController::class, 'resend']);
+            Route::patch('/employees/{employee}/toggle-active', [EmployeeActivationController::class, 'toggleActive']);
+
+        });
+
+        // لاحقًا: مشاريع، مهام... كل شي تابع للمؤسسة بعد الاعتماد يضل هون
     });
 });
 

@@ -19,14 +19,10 @@ class PasswordResetController extends Controller
         );
         // هاي
         if ($status === Password::RESET_LINK_SENT) {
-            return response()->json([
-                'message' => 'تم إرسال رابط إعادة تعيين كلمة السر إلى بريدك.',
-            ]);
+            return BaseController::sendResponse([], 'تم إرسال رابط إعادة تعيين كلمة السر إلى بريدك.');
         }
 
-        return response()->json([
-            'message' => 'حدث خطأ، تأكد من صحة البريد الإلكتروني.',
-        ], 400);
+        return BaseController::sendError('حدث خطأ، تأكد من صحة البريد الإلكتروني.', [], 400);
     }
 
     // الخطوة 2: تحديد الباسورد الجديد فعليًا
@@ -49,13 +45,9 @@ class PasswordResetController extends Controller
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return response()->json([
-                'message' => 'تم تغيير كلمة السر بنجاح.',
-            ]);
+            return BaseController::sendResponse([], 'تم تغيير كلمة السر بنجاح.');
         }
 
-        return response()->json([
-            'message' => 'الرابط غير صالح أو منتهي الصلاحية.',
-        ], 400);
+        return BaseController::sendError('الرابط غير صالح أو منتهي الصلاحية.', [], 400);
     }
 }

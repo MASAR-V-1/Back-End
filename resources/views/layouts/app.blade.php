@@ -22,7 +22,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body dir="{{ app()->getLocale() === 'ar' ? 'ltr' : 'rtl' }}" class="antialiased bg-slate-100 text-slate-800 text-sm"
+<body dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}" class="antialiased bg-slate-100 text-slate-800 text-sm"
     x-data="{ sidebarOpen: false }">
 
     <!-- الحاوية الرئيسية للشاشة بالكامل لمنع الـ Scroll العشوائي وتثبيت الأقسام -->
@@ -31,10 +31,10 @@
         <!-- ========================================== -->
         <!-- 1. الـ SIDEBAR الجانبي الداكن (Admin One Style) -->
         <!-- ========================================== -->
-        <aside style='border-left: 1px solid #00000036;'
+        <aside style='border-left: 1px solid #00000036; background-color: #f1f5f9;'
             :class="sidebarOpen ? 'translate-x-0' : (document.documentElement.dir === 'rtl' ? 'translate-x-full' :
                 '-translate-x-full')"
-            class="fixed inset-y-0  {{ app()->getLocale() === 'ar' ? 'right-0 border-l' : 'left-0 border-r' }} z-50 w-60 text-gray-900 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static flex flex-col justify-between flex-shrink-0 border-slate-800">
+            class="fixed inset-y-0  {{ app()->getLocale() === 'ar' ? 'right-0 border-l' : 'left-0 border-r' }}  lg:bg-transparent  z-50 w-60 text-gray-900 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static flex flex-col justify-between flex-shrink-0 border-slate-800">
 
             <div>
                 <!-- هيدر السايدبار (Logo) -->
@@ -64,7 +64,7 @@
                         class="flex items-center gap-3 px-3 py-2 rounded text-xs font-medium transition-colors {{ request()->routeIs('dashboard') ? 'bg-green-800 text-white font-semibold shadow-sm' : 'hover:bg-green-800 hover:text-white' }}">
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a２ ２ ０ ００２ ２h２a２ ２ ０ ００２-２" />
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2" />
                         </svg>
                         لوحة التحكم الرئيسية
                     </a>
