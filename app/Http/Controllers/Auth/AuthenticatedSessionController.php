@@ -28,7 +28,16 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        if ($request->user()->hasRole('super_admin')) {
+            return redirect()->intended(route('dashboard'));
+        }
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+        flash()->error('انت لا تمتلك صلاحية الدخول إلى لوحة التحكم. يرجى التواصل مع المسؤول.');
+        return redirect('/');
     }
 
     /**
