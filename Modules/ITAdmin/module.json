@@ -1,0 +1,11 @@
+{
+    "name": "ITAdmin",
+    "alias": "itadmin",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ITAdmin\\app\\Providers\\ITAdminServiceProvider"
+    ],
+    "files": []
+}
