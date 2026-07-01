@@ -24,7 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (app()->environment('production')) {
+        if (app()->environment('production') || env('APP_ENV') === 'production') {
             URL::forceScheme('https');
         }
         ResetPassword::createUrlUsing(function ($notifiable, string $token) {
@@ -65,7 +65,7 @@ class AppServiceProvider extends ServiceProvider
                 ]
             );
 
-            return config('app.frontend_url') . 'verify-email?verify_url=' . urlencode($apiVerifyUrl);
+            return rtrim(config('app.frontend_url'), '/') . '/verify-email?verify_url=' . urlencode($apiVerifyUrl);
             // return urlencode($apiVerifyUrl);
         });
     }
